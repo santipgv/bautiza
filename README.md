@@ -61,3 +61,7 @@ Configuración e historial en `~/Library/Application Support/Bautiza/`.
 - `LocalAI` – Apple Foundation Models
 - `Processor` – aprobación, renombrado, deshacer
 - `MenuViews`, `SettingsViews` – interfaz
+
+## Licencia
+
+[MIT](LICENSE)
