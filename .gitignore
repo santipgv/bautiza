@@ -1,0 +1,8 @@
+# Compilación
+/build/
+/.build/
+/compat/
+*.dSYM/
+
+# macOS
+.DS_Store

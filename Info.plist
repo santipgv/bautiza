@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key><string>es</string>
+    <key>CFBundleLocalizations</key><array><string>es</string><string>en</string></array>
+    <key>CFBundleName</key><string>Bautiza</string>
+    <key>CFBundleDisplayName</key><string>Bautiza</string>
+    <key>CFBundleIdentifier</key><string>es.bautiza.app</string>
+    <key>CFBundleExecutable</key><string>Bautiza</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>0.3</string>
+    <key>CFBundleVersion</key><string>1</string>
+    <key>LSMinimumSystemVersion</key><string>14.0</string>
+    <key>LSUIElement</key><true/>
+    <key>NSServices</key>
+    <array>
+        <dict>
+            <key>NSMenuItem</key><dict><key>default</key><string>Renombrar con Bautiza</string></dict>
+            <key>NSMessage</key><string>renombrarArchivos</string>
+            <key>NSPortName</key><string>Bautiza</string>
+            <key>NSRequiredContext</key><dict/>
+            <key>NSSendFileTypes</key><array><string>public.item</string></array>
+        </dict>
+    </array>
+    <key>NSDownloadsFolderUsageDescription</key><string>Bautiza vigila la carpeta Descargas para renombrar los archivos nuevos.</string>
+    <key>NSDocumentsFolderUsageDescription</key><string>Bautiza puede mover archivos renombrados a carpetas dentro de Documentos.</string>
+</dict>
+</plist>
