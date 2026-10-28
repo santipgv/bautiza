@@ -1,7 +1,7 @@
 # Bautiza
 
 App de la barra de menús de macOS que vigila Descargas y renombra cada archivo nuevo
-leyendo su contenido, por ejemplo: `20261026-AVON-Licitación vehículos-firmada.pdf`.
+leyendo su contenido, por ejemplo: `20261026-ACME-Licitación vehículos-firmada.pdf`.
 
 ## Compilar y abrir
 
