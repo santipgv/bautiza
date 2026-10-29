@@ -1,0 +1,52 @@
+name: Compilar
+
+# En cada push a main: pruebas + compilación con el SDK de macOS 26 (incluye la IA de Apple).
+# Al subir una etiqueta v* (p. ej. v0.4.0): además publica la versión con Bautiza.zip.
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  compilar:
+    runs-on: macos-26
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versión de Xcode y SDK
+        run: |
+          xcodebuild -version
+          echo "SDK de macOS: $(xcrun --sdk macosx --show-sdk-version)"
+
+      - name: Pruebas
+        run: ./test.sh
+
+      - name: Compilar app universal
+        run: ./build.sh --zip
+
+      - name: Comprobar que lleva la IA de Apple
+        run: |
+          touch /tmp/vacio.txt
+          estado=$(build/Bautiza.app/Contents/MacOS/Bautiza --probar /tmp/vacio.txt | head -1)
+          echo "$estado"
+          if echo "$estado" | grep -qE "sin la IA|no Apple AI"; then
+            echo "::error::La app se ha compilado sin la IA de Apple"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Bautiza
+          path: build/Bautiza.zip
+
+      - name: Publicar versión
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" build/Bautiza.zip \
+            --title "Bautiza ${GITHUB_REF_NAME#v}" --generate-notes

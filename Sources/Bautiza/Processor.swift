@@ -1,9 +1,19 @@
 import Foundation
 
+/// De dónde viene un archivo a analizar.
+enum Origen {
+    /// Lo ha detectado la vigilancia: puede renombrarse solo según el modo.
+    case vigilancia
+    /// Lo ha elegido el usuario: siempre se le enseña la propuesta.
+    case manual
+    /// Estaba pendiente al cerrar la app: vuelve a la lista sin avisar.
+    case recuperado
+}
+
 /// Coordina análisis, aprobación, renombrado y deshacer.
 @MainActor
 final class Processor: ObservableObject {
-    @Published var pendientes: [Propuesta] = []
+    @Published var pendientes: [Propuesta] = [] { didSet { guardarPendientes() } }
     @Published var analizando: Set<String> = []
     @Published var ultimoError: String?
 
@@ -24,35 +34,59 @@ final class Processor: ObservableObject {
         guard !rutasPropias.contains(ruta),
               !analizando.contains(ruta),
               !pendientes.contains(where: { $0.url.standardizedFileURL.path == ruta }) else { return }
-        analizar(url, manual: false)
+        analizar(url, origen: .vigilancia)
     }
 
-    /// `manual`: el usuario lo eligió desde el menú; siempre se le enseña la propuesta.
-    func analizar(_ url: URL, manual: Bool) {
+    func analizar(_ url: URL, origen: Origen) {
         let ruta = url.standardizedFileURL.path
         analizando.insert(ruta)
         let conf = store.configuracion
+        let dondeBuscar = carpetasParaDuplicados(de: url)
         Task {
-            let propuesta = await Task.detached { await FieldResolver.analizar(url, conf) }.value
+            let propuesta = await Task.detached { () -> Propuesta in
+                var p = await FieldResolver.analizar(url, conf)
+                if let copia = Duplicados.buscar(url, en: dondeBuscar) {
+                    p.duplicadoDe = copia
+                    p.dudas.insert(L("Ya tienes este archivo: «\(copia.lastPathComponent)»",
+                                     "You already have this file: “\(copia.lastPathComponent)”"), at: 0)
+                }
+                return p
+            }.value
             analizando.remove(ruta)
-            decidir(propuesta, manual: manual)
+            decidir(propuesta, origen: origen)
         }
     }
 
-    private func decidir(_ p: Propuesta, manual: Bool) {
-        if !manual, p.nombre == p.url.lastPathComponent, !p.mueveDeCarpeta { return }
-        let modo = store.ajustes.modo
-        let automatico = !manual && (modo == .automatico || (modo == .confirmarSiDudas && p.dudas.isEmpty))
+    /// La carpeta del archivo, las vigiladas y aquellas a las que se movieron archivos renombrados.
+    private func carpetasParaDuplicados(de url: URL) -> [URL] {
+        let movidas = store.historial.prefix(300).filter { !$0.deshecho }
+            .map { URL(fileURLWithPath: $0.nuevo).deletingLastPathComponent() }
+        return [url.deletingLastPathComponent()] + AppModel.shared.carpetasVigiladas + movidas
+    }
+
+    private func decidir(_ p: Propuesta, origen: Origen) {
+        let automatico: Bool
+        switch origen {
+        case .vigilancia:
+            if p.nombre == p.url.lastPathComponent, !p.mueveDeCarpeta, p.duplicadoDe == nil { return }
+            let modo = store.ajustes.modo
+            // Un duplicado siempre se pregunta: puede que quieras tirarlo en vez de renombrarlo.
+            automatico = p.duplicadoDe == nil
+                && (modo == .automatico || (modo == .confirmarSiDudas && p.dudas.isEmpty))
+        case .manual, .recuperado:
+            automatico = false
+        }
         if automatico {
             if let destino = aplicar(p, nombre: p.nombre) {
                 notifier?.avisar(L("Renombrado", "Renamed"), destino.lastPathComponent)
             }
         } else {
+            pendientes.removeAll { $0.url.standardizedFileURL.path == p.url.standardizedFileURL.path }
             pendientes.append(p)
-            if manual {
-                Ventanas.shared.mostrarPendientes()
-            } else {
-                notifier?.proponer(p)
+            switch origen {
+            case .manual: Ventanas.shared.mostrarPendientes()
+            case .vigilancia: notifier?.proponer(p)
+            case .recuperado: break
             }
         }
     }
@@ -79,6 +113,46 @@ final class Processor: ObservableObject {
         } catch {
             ultimoError = L("No se pudo renombrar «\(p.url.lastPathComponent)»", "Couldn't rename “\(p.url.lastPathComponent)”") + ": \(error.localizedDescription)"
             return nil
+        }
+    }
+
+    /// Manda el duplicado a la Papelera (se puede recuperar desde allí).
+    func tirarDuplicado(_ p: Propuesta) {
+        do {
+            try FileManager.default.trashItem(at: p.url, resultingItemURL: nil)
+            quitar(p)
+        } catch {
+            ultimoError = L("No se pudo mover a la Papelera", "Couldn't move to the Trash") + ": \(error.localizedDescription)"
+        }
+    }
+
+    /// Añade a tu lista la entidad que se encontró en el texto y vuelve a analizar los pendientes.
+    func añadirEntidad(_ nombre: String, tipo: EntityKind) {
+        guard !store.entidades.contains(where: { Texto.normalizar($0.nombre) == Texto.normalizar(nombre) }) else { return }
+        store.entidades.append(Entity(nombre: nombre, tipo: tipo))
+        reanalizarPendientes()
+    }
+
+    func reanalizarPendientes() {
+        for p in pendientes { analizar(p.url, origen: .recuperado) }
+    }
+
+    // MARK: - Pendientes entre sesiones
+
+    private func guardarPendientes() {
+        let rutas = pendientes.map(\.url.path)
+        try? FileManager.default.createDirectory(at: Store.carpetaDatos, withIntermediateDirectories: true)
+        if let data = try? JSONEncoder.bautiza.encode(rutas) {
+            try? data.write(to: Store.rutaPendientes, options: .atomic)
+        }
+    }
+
+    /// Vuelve a poner en la lista lo que quedó sin aprobar la última vez.
+    func recuperarPendientes() {
+        guard let data = try? Data(contentsOf: Store.rutaPendientes),
+              let rutas = try? JSONDecoder.bautiza.decode([String].self, from: data) else { return }
+        for ruta in rutas where FileManager.default.fileExists(atPath: ruta) {
+            analizar(URL(fileURLWithPath: ruta), origen: .recuperado)
         }
     }
 

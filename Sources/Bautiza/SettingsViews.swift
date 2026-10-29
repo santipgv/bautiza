@@ -30,15 +30,25 @@ struct AjustesGenerales: View {
                     ForEach(Idioma.allCases) { Text($0.titulo).tag($0) }
                 }
             }
-            Section(L("Carpeta vigilada", "Watched folder")) {
-                HStack {
-                    Text(rutaCorta(store.ajustes.carpeta))
-                    Spacer()
-                    Button(L("Cambiar…", "Change…")) {
-                        if let url = elegirCarpeta() {
-                            store.ajustes.carpeta = rutaCorta(url.path)
+            Section(L("Carpetas vigiladas", "Watched folders")) {
+                ForEach(store.ajustes.carpetas, id: \.self) { carpeta in
+                    HStack {
+                        Image(systemName: "folder")
+                        Text(rutaCorta(carpeta))
+                        Spacer()
+                        Button {
+                            store.ajustes.carpetas.removeAll { $0 == carpeta }
                             AppModel.shared.reiniciarVigilancia()
-                        }
+                        } label: { Image(systemName: "minus.circle") }
+                        .buttonStyle(.borderless)
+                        .help(L("Dejar de vigilar", "Stop watching"))
+                    }
+                }
+                Button(L("Añadir carpeta…", "Add folder…")) {
+                    if let url = elegirCarpeta() {
+                        let ruta = rutaCorta(url.path)
+                        if !store.ajustes.carpetas.contains(ruta) { store.ajustes.carpetas.append(ruta) }
+                        AppModel.shared.reiniciarVigilancia()
                     }
                 }
             }

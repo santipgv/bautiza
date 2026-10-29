@@ -8,7 +8,7 @@ final class AppModel {
     let store = Store()
     let processor: Processor
     let notifier = Notifier()
-    private var watcher: FolderWatcher?
+    private var watchers: [FolderWatcher] = []
 
     private init() {
         processor = Processor(store: store)
@@ -17,18 +17,24 @@ final class AppModel {
         notifier.configurar()
         store.alCambiarIdioma = { [notifier] in notifier.configurarBotones() }
         reiniciarVigilancia()
+        processor.recuperarPendientes()
     }
 
-    var carpetaVigilada: URL {
-        URL(fileURLWithPath: (store.ajustes.carpeta as NSString).expandingTildeInPath, isDirectory: true)
+    var carpetasVigiladas: [URL] {
+        store.ajustes.carpetas.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath, isDirectory: true) }
     }
+
+    /// La primera carpeta vigilada, para abrir los diálogos de archivo.
+    var carpetaVigilada: URL? { carpetasVigiladas.first }
 
     func reiniciarVigilancia() {
-        watcher?.detener()
-        watcher = FolderWatcher(carpeta: carpetaVigilada) { url in
-            Task { @MainActor in AppModel.shared.processor.nuevoArchivo(url) }
+        watchers.forEach { $0.detener() }
+        watchers = carpetasVigiladas.map { carpeta in
+            FolderWatcher(carpeta: carpeta) { url in
+                Task { @MainActor in AppModel.shared.processor.nuevoArchivo(url) }
+            }
         }
-        watcher?.iniciar()
+        watchers.forEach { $0.iniciar() }
     }
 }
 
@@ -38,7 +44,7 @@ final class ServicioFinder: NSObject {
         let urls = pboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
         Task { @MainActor in
             for url in urls where !url.hasDirectoryPath {
-                AppModel.shared.processor.analizar(url, manual: true)
+                AppModel.shared.processor.analizar(url, origen: .manual)
             }
         }
     }

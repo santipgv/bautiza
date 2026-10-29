@@ -1,5 +1,7 @@
 # Bautiza
 
+[![Compilar](https://github.com/santipgv/bautiza/actions/workflows/compilar.yml/badge.svg)](https://github.com/santipgv/bautiza/actions/workflows/compilar.yml)
+
 **Tu carpeta de Descargas, con nombres que se entienden.**
 
 Bautiza es una pequeña app para la barra de menús de macOS. Cada vez que descargas un archivo, lo lee y te propone un nombre ordenado:
@@ -20,7 +22,10 @@ documento (3).pdf                   →  20261020-Certificado literal de nacimie
 - **Sabe si está firmado** (firma digital del PDF, DocuSign, «Firmado digitalmente por…»).
 - **Nombre a tu gusto** con plantillas: `{fecha}-{entidad}-{asunto}-{firmada?firmada}`.
 - **Reglas**: «si pone *factura*, asunto Factura y muévelo a `~/Documents/Clientes/{entidad}`».
-- **Tú decides**: te pide aprobación (o renombra solo), con deshacer e historial.
+- **Tú decides**: te pide aprobación (o renombra solo), con deshacer e historial. Lo que dejes pendiente sigue ahí aunque cierres la app.
+- **Aprende contigo**: si encuentra una empresa que no está en tu lista, la añades como cliente o proveedor con un botón.
+- **Avisa de duplicados**: si ya tienes ese mismo archivo, te ofrece mandarlo a la Papelera.
+- **Varias carpetas**: Descargas y las que quieras.
 - **Botón derecho en Finder** → Acciones rápidas → *Renombrar con Bautiza*.
 - **Todo en tu Mac**: no sube nada a ningún sitio. IA opcional de Apple, también local.
 - En **español e inglés**.
@@ -43,6 +48,12 @@ open /Applications/Bautiza.app
 
 Aparecerá un icono en la barra de menús. Acepta los permisos de Descargas y notificaciones.
 
+Para pasar las pruebas:
+
+```bash
+./test.sh
+```
+
 Para probar qué nombre pondría a un archivo sin tocarlo:
 
 ```bash
@@ -51,7 +62,7 @@ build/Bautiza.app/Contents/MacOS/Bautiza --probar ~/Downloads/algo.pdf
 
 ### IA de Apple (opcional)
 
-Con Apple Intelligence activado y compilando con el SDK de macOS 26, Bautiza usa el modelo de Apple en tu Mac para resumir el asunto, distinguir documentos personales y resolver fechas dudosas. Le puedes dar instrucciones con tus palabras en Ajustes. Sin IA funciona igual, con reglas y el encabezado del documento.
+Con Apple Intelligence activado y compilando con el SDK de macOS 26 (Xcode 26 o Command Line Tools 26), Bautiza usa el modelo de Apple en tu Mac para resumir el asunto, distinguir documentos personales y resolver fechas dudosas. Le puedes dar instrucciones con tus palabras en Ajustes. Sin IA funciona igual, con reglas y el encabezado del documento.
 
 ![Ajustes](docs/4-ajustes.jpg)
 
@@ -73,10 +84,13 @@ App nativa en Swift + SwiftUI, sin dependencias.
 - `FieldResolver`: fecha, entidad, asunto, firma y regla
 - `TemplateEngine`: plantillas
 - `LocalAI`: Apple Foundation Models
-- `Processor`: aprobación, renombrado, deshacer
+- `Processor`: aprobación, renombrado, deshacer, pendientes
+- `Duplicados`: busca archivos idénticos (SHA-256)
 - `MenuViews`, `SettingsViews`: interfaz; los textos van en `L("español", "english")`
 
-Configuración e historial en `~/Library/Application Support/Bautiza/`.
+Configuración, historial y pendientes en `~/Library/Application Support/Bautiza/`.
+
+Cada push a `main` pasa las pruebas y compila con el SDK de macOS 26 en GitHub Actions. Al subir una etiqueta `v*` se publica la versión con `Bautiza.zip`.
 
 ---
 

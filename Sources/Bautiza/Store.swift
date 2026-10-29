@@ -49,6 +49,7 @@ final class Store: ObservableObject {
     }
     nonisolated static var rutaConfiguracion: URL { carpetaDatos.appendingPathComponent("configuracion.json") }
     nonisolated static var rutaHistorial: URL { carpetaDatos.appendingPathComponent("historial.json") }
+    nonisolated static var rutaPendientes: URL { carpetaDatos.appendingPathComponent("pendientes.json") }
 
     private struct Archivo: Codable {
         var ajustes: AppSettings
@@ -62,10 +63,14 @@ final class Store: ObservableObject {
               let raiz = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             return Configuracion(ajustes: AppSettings(), entidades: ejemploEntidades, reglas: ejemploReglas)
         }
-        let ajustes = fusionar(raiz["ajustes"], con: AppSettings()) ?? AppSettings()
+        var ajustes = fusionar(raiz["ajustes"], con: AppSettings()) ?? AppSettings()
         let entidades = (raiz["entidades"] as? [Any] ?? []).compactMap { fusionar($0, con: Entity(nombre: "")) }
         var reglas = (raiz["reglas"] as? [Any] ?? []).compactMap { fusionar($0, con: Rule(nombre: "")) }
         let ajustesGuardados = raiz["ajustes"] as? [String: Any]
+        // Antes solo había una carpeta vigilada.
+        if ajustesGuardados?["carpetas"] == nil, let una = ajustesGuardados?["carpeta"] as? String {
+            ajustes.carpetas = [una]
+        }
         // Configuraciones anteriores a los tipos de archivo: les añadimos la regla de documentos personales.
         if ajustesGuardados?["tiposVigilados"] == nil {
             reglas.insert(reglaPersonal, at: 0)

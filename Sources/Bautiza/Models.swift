@@ -113,7 +113,7 @@ struct Rule: Codable, Identifiable, Hashable {
 }
 
 struct AppSettings: Codable {
-    var carpeta = "~/Downloads"
+    var carpetas = ["~/Downloads"]
     var modo: ApprovalMode = .siempreConfirmar
     var fuenteFecha: DateSource = .documentoOdescarga
     var formatoFecha = "yyyyMMdd"
@@ -172,6 +172,10 @@ struct Propuesta: Identifiable {
     var dudas: [String]
     var ocr: Bool
     var usoIA: Bool
+    /// Empresa encontrada en el texto o por la IA que no está en tu lista: se puede añadir con un botón.
+    var entidadSugerida: String? = nil
+    /// Archivo idéntico que ya tienes.
+    var duplicadoDe: URL? = nil
 
     var mueveDeCarpeta: Bool {
         carpetaDestino.standardizedFileURL.path != url.deletingLastPathComponent().standardizedFileURL.path

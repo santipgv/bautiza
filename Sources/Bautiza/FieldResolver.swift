@@ -17,6 +17,7 @@ enum FieldResolver {
         var entidadNombre: String?
         var entidadOrigen = L("no encontrada", "not found")
         var personal = false
+        var entidadSugerida: String?
         if case let (e, origen)? = buscarEntidad(textoN, en: conf.entidades, extra: [nombreN] + origenesN) {
             entidad = e
             entidadOrigen = origen
@@ -73,6 +74,7 @@ enum FieldResolver {
                           !esPropia(sugerida, ajustes.misEmpresas) {
                     entidadNombre = sugerida
                     entidadOrigen = L("IA (no está en tu lista)", "AI (not in your list)")
+                    entidadSugerida = sugerida
                     dudas.append(L("Entidad «\(sugerida)» deducida por la IA; no está en tu lista", "“\(sugerida)” suggested by the AI; not in your list"))
                 }
             }
@@ -81,6 +83,7 @@ enum FieldResolver {
            let sugerida = Texto.empresaEnTexto(contenido.texto, excluir: ajustes.misEmpresas) {
             entidadNombre = sugerida
             entidadOrigen = L("texto (no está en tu lista)", "text (not in your list)")
+            entidadSugerida = sugerida
             dudas.append(L("Entidad «\(sugerida)» encontrada en el texto; no está en tu lista", "“\(sugerida)” found in the text; not in your list"))
         }
         if let entidad { entidadNombre = entidad.nombre }
@@ -155,7 +158,8 @@ enum FieldResolver {
             entidad: personal ? nil : entidadNombre, entidadOrigen: entidadOrigen,
             asunto: asunto, asuntoOrigen: asuntoOrigen,
             firmada: firmada, firmaOrigen: firmaOrigen,
-            dudas: dudas, ocr: contenido.ocr, usoIA: ia != nil)
+            dudas: dudas, ocr: contenido.ocr, usoIA: ia != nil,
+            entidadSugerida: personal ? nil : entidadSugerida)
     }
 
     // MARK: - Entidad

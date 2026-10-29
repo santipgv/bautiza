@@ -10,7 +10,7 @@ struct MenuContent: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Bautiza").font(.headline)
-                    Text(store.ajustes.pausado ? L("En pausa", "Paused") : L("Vigilando", "Watching") + " \(rutaCorta(store.ajustes.carpeta))")
+                    Text(store.ajustes.pausado ? L("En pausa", "Paused") : L("Vigilando", "Watching") + " " + resumenCarpetas)
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -64,7 +64,7 @@ struct MenuContent: View {
             VStack(alignment: .leading, spacing: 6) {
                 Button(L("Renombrar un archivo…", "Rename a file…")) {
                     if let url = elegirArchivo(empezandoEn: AppModel.shared.carpetaVigilada) {
-                        processor.analizar(url, manual: true)
+                        processor.analizar(url, origen: .manual)
                     }
                 }
                 Button(L("Ajustes…", "Settings…")) { Ventanas.shared.mostrarAjustes() }
@@ -74,6 +74,15 @@ struct MenuContent: View {
         }
         .padding(14)
         .frame(width: 340)
+    }
+}
+
+extension MenuContent {
+    /// "~/Downloads" o "~/Downloads y 2 más".
+    var resumenCarpetas: String {
+        guard let primera = store.ajustes.carpetas.first else { return L("ninguna carpeta", "no folder") }
+        let resto = store.ajustes.carpetas.count - 1
+        return rutaCorta(primera) + (resto > 0 ? L(" y \(resto) más", " and \(resto) more") : "")
     }
 }
 
@@ -141,8 +150,21 @@ struct TarjetaPendiente: View {
                 Label(d, systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(.orange)
             }
 
+            if let sugerida = p.entidadSugerida {
+                HStack(spacing: 8) {
+                    Text(L("¿Añadir «\(sugerida)» a tu lista como…", "Add “\(sugerida)” to your list as…"))
+                        .font(.caption).foregroundStyle(.secondary)
+                    Button(L("Cliente", "Client")) { processor.añadirEntidad(sugerida, tipo: .cliente) }
+                    Button(L("Proveedor", "Supplier")) { processor.añadirEntidad(sugerida, tipo: .proveedor) }
+                }
+                .controlSize(.small)
+            }
+
             HStack {
                 Button(L("Ignorar", "Ignore")) { processor.ignorar(p) }
+                if p.duplicadoDe != nil {
+                    Button(L("Mover a la Papelera", "Move to Trash"), role: .destructive) { processor.tirarDuplicado(p) }
+                }
                 Spacer()
                 Button(L("Aceptar", "Accept")) { processor.aplicar(p, nombre: nombre) }
                     .buttonStyle(.borderedProminent)
