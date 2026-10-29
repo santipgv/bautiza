@@ -36,7 +36,19 @@ documento (3).pdf                   →  20261020-Certificado literal de nacimie
 
 ## Instalar
 
-Necesitas macOS 14 o posterior (Apple Silicon o Intel) y las Command Line Tools de Xcode (`xcode-select --install`).
+Necesitas macOS 14 o posterior (Apple Silicon o Intel).
+
+1. Descarga `Bautiza.zip` de la [última versión](https://github.com/santipgv/bautiza/releases/latest) y descomprímelo. Ya incluye la IA de Apple.
+2. Mueve **Bautiza.app** a Aplicaciones.
+3. La app no está firmada con una cuenta de desarrollador de Apple, así que la primera vez macOS la bloqueará. Ábrela una vez, ve a **Ajustes del Sistema → Privacidad y seguridad** y pulsa **Abrir igualmente**. O desde Terminal:
+
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/Bautiza.app
+   ```
+
+### Compilar tú mismo
+
+Con las Command Line Tools de Xcode (`xcode-select --install`):
 
 ```bash
 git clone https://github.com/santipgv/bautiza.git
@@ -96,7 +108,7 @@ Cada push a `main` pasa las pruebas y compila con el SDK de macOS 26 en GitHub A
 
 ### English
 
-Bautiza is a tiny macOS menu bar app that reads every file you download (PDF, scanned PDF, Word, Excel, PowerPoint) and renames it from its content: document date, client or supplier, subject and whether it's signed, e.g. `20261026-AVON-Tender specs-signed.pdf`. Templates (`{date}-{entity}-{subject}-{signed?signed}`), rules, approval with undo, a Finder Quick Action, and optional on-device Apple AI. Everything stays on your Mac. Build it with `./build.sh` as described above.
+Bautiza is a tiny macOS menu bar app that reads every file you download (PDF, scanned PDF, Word, Excel, PowerPoint) and renames it from its content: document date, client or supplier, subject and whether it's signed, e.g. `20261026-AVON-Tender specs-signed.pdf`. Templates (`{date}-{entity}-{subject}-{signed?signed}`), rules, approval with undo, a Finder Quick Action, and optional on-device Apple AI. Everything stays on your Mac. Download it from [Releases](https://github.com/santipgv/bautiza/releases/latest) or build it with `./build.sh`.
 
 ## Licencia
 
