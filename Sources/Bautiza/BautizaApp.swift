@@ -17,7 +17,8 @@ final class AppModel {
         notifier.configurar()
         store.alCambiarIdioma = { [notifier] in notifier.configurarBotones() }
         reiniciarVigilancia()
-        processor.recuperarPendientes()
+        // Después de terminar de crear AppModel: lo que se analiza puede necesitar AppModel.shared.
+        DispatchQueue.main.async { [processor] in processor.recuperarPendientes() }
     }
 
     var carpetasVigiladas: [URL] {

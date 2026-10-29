@@ -38,6 +38,17 @@ jobs:
             exit 1
           fi
 
+      - name: Arranca y recupera un pendiente guardado
+        run: |
+          P=$RUNNER_TEMP/arranque; mkdir -p $P/datos $P/vigilada
+          cp README.md $P/vigilada/nota.md
+          printf '{"ajustes":{"carpetas":["%s"],"usarIA":false,"versionDatos":3}}' "$P/vigilada" > $P/datos/configuracion.json
+          printf '["%s"]' "$P/vigilada/nota.md" > $P/datos/pendientes.json
+          BAUTIZA_DATOS=$P/datos build/Bautiza.app/Contents/MacOS/Bautiza &
+          PID=$!; sleep 8
+          if ! kill -0 $PID 2>/dev/null; then echo "::error::Bautiza se cierra al arrancar"; exit 1; fi
+          kill $PID
+
       - uses: actions/upload-artifact@v4
         with:
           name: Bautiza

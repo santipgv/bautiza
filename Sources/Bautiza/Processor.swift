@@ -61,7 +61,8 @@ final class Processor: ObservableObject {
     private func carpetasParaDuplicados(de url: URL) -> [URL] {
         let movidas = store.historial.prefix(300).filter { !$0.deshecho }
             .map { URL(fileURLWithPath: $0.nuevo).deletingLastPathComponent() }
-        return [url.deletingLastPathComponent()] + AppModel.shared.carpetasVigiladas + movidas
+        let vigiladas = store.ajustes.carpetas.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
+        return [url.deletingLastPathComponent()] + vigiladas + movidas
     }
 
     private func decidir(_ p: Propuesta, origen: Origen) {
