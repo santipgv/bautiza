@@ -115,8 +115,10 @@ enum FieldResolver {
         if let regla, let fijo = regla.asuntoFijo.noVacio {
             asunto = fijo
             asuntoOrigen = L("regla «\(regla.nombre)»", "rule “\(regla.nombre)”")
-        } else if let a = ia?.asunto {
-            asunto = Texto.primeraMayuscula(a)
+        } else if let a = ia?.asunto.map(Texto.frase),
+                  // Una sola palabra («Nacimiento») suele quedarse corta: mejor el encabezado si lo hay.
+                  a.split(separator: " ").count > 1 || Texto.encabezado(contenido.texto, excluir: []) == nil {
+            asunto = a
             asuntoOrigen = L("IA", "AI")
         } else if let t = Texto.tituloUtil(contenido.titulo) {
             asunto = t
@@ -423,6 +425,17 @@ enum Texto {
         s = s.replacingOccurrences(of: #"\b\d{6,}\b"#, with: " ", options: .regularExpression)
         s = s.replacingOccurrences(of: #"\s*\(\d+\)$"#, with: "", options: .regularExpression)
         return TemplateEngine.limpiar(s).noVacio
+    }
+
+    /// "LICITACION VEHICULOS" o "Contrato Mantenimiento" → "Licitacion vehiculos", "Contrato mantenimiento".
+    /// Respeta siglas cortas dentro de una frase normal ("Contrato con IBM").
+    static func frase(_ s: String) -> String {
+        let t = s.recortado.trimmingCharacters(in: CharacterSet(charactersIn: ".\"«»"))
+        let palabras = t.split(separator: " ")
+        let todoMayusculas = t == t.uppercased() && t != t.lowercased()
+        let todasCapitalizadas = palabras.count > 1 && palabras.allSatisfy { $0.first?.isUppercase == true }
+        guard todoMayusculas || todasCapitalizadas else { return primeraMayuscula(t) }
+        return primeraMayuscula(t.lowercased(with: Locale(identifier: "es_ES")))
     }
 
     static func primeraMayuscula(_ s: String) -> String {

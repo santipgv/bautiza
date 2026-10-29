@@ -1,4 +1,5 @@
 import Foundation
+import NaturalLanguage
 #if canImport(FoundationModels)
 import FoundationModels
 #endif
@@ -63,7 +64,16 @@ enum LocalAI {
                 Instrucciones del usuario:
                 \(instrucciones)
                 """)
-            let prompt = "Nombre del archivo: \(nombreArchivo)\n\nTexto del documento:\n\(texto.prefix(2500))"
+            // El modelo pequeño tiende a responder en español; le decimos el idioma del documento.
+            let idioma = NLLanguageRecognizer.dominantLanguage(for: String(texto.prefix(2000)))
+            let nombreIdioma = idioma.flatMap { Locale(identifier: "es").localizedString(forLanguageCode: $0.rawValue) } ?? "el del documento"
+            let prompt = """
+                Idioma del documento: \(nombreIdioma). Escribe el asunto en ese idioma.
+                Nombre del archivo: \(nombreArchivo)
+
+                Texto del documento:
+                \(texto.prefix(2500))
+                """
             guard let r = try? await sesion.respond(to: prompt, generating: DocumentoIA.self) else { return nil }
             let f = DateFormatter()
             f.dateFormat = "yyyy-MM-dd"

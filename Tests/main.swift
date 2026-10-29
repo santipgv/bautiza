@@ -103,6 +103,11 @@ igual(Texto.encabezado("NORTHWIND TRADING LTD\nINVOICE 88213\n", excluir: []), "
 igual(Texto.empresaEnTexto("Cliente: Mi Empresa S.L.\nSUMINISTROS LEVANTE S.L.", excluir: ["Mi Empresa"]),
       "SUMINISTROS LEVANTE", "ignora tu propia empresa")
 
+igual(Texto.frase("LICITACION VEHICULOS"), "Licitacion vehiculos", "asunto en mayúsculas")
+igual(Texto.frase("Contrato Mantenimiento"), "Contrato mantenimiento", "asunto con cada palabra en mayúscula")
+igual(Texto.frase("Contrato con IBM"), "Contrato con IBM", "respeta siglas en una frase normal")
+igual(Texto.frase("factura"), "Factura", "primera letra en mayúscula")
+
 // MARK: - Análisis completo
 
 var ajustes = AppSettings()
