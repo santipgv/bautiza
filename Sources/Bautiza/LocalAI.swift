@@ -15,7 +15,7 @@ struct ResultadoIA {
 @available(macOS 26.0, *)
 @Generable
 struct DocumentoIA {
-    @Guide(description: "De qué trata el documento en 2 a 4 palabras en español, sin fechas ni nombres de empresas. Ejemplos: Licitación vehículos, Contrato mantenimiento, Oferta comercial")
+    @Guide(description: "De qué trata el documento en 2 a 4 palabras, en el mismo idioma que el documento, solo la primera letra en mayúscula, sin fechas ni nombres de empresas. Ejemplos: Licitación renting vehículos, Contrato de mantenimiento, Oferta comercial, Service agreement")
     var asunto: String
     @Guide(description: "Empresa u organización que emite el documento. Cadena vacía si no se sabe")
     var emisor: String
@@ -58,7 +58,7 @@ enum LocalAI {
             guard case .available = SystemLanguageModel.default.availability else { return nil }
             let sesion = LanguageModelSession(instructions: """
                 Clasificas documentos para ponerles un nombre de archivo corto. \
-                Escribe el asunto en \(Loc.ingles ? "inglés" : "español") y sé breve.
+                Escribe el asunto en el mismo idioma que el documento y sé breve.
 
                 Instrucciones del usuario:
                 \(instrucciones)
