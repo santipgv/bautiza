@@ -160,7 +160,7 @@ struct DetallesPropuesta: View {
 
     var body: some View {
         Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 3) {
-            fila(L("Fecha", "Date"), p.fecha.map { $0.formatted(date: .abbreviated, time: .omitted) }, p.fechaOrigen)
+            fila(L("Fecha", "Date"), p.fecha.map { $0.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, locale: Loc.locale)) }, p.fechaOrigen)
             fila(L("Entidad", "Entity"), p.entidad, p.entidadOrigen)
             fila(L("Asunto", "Subject"), p.asunto, p.asuntoOrigen)
             fila(L("Firmada", "Signed"), p.firmada ? L("Sí", "Yes") : L("No", "No"), p.firmaOrigen)

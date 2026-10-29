@@ -39,7 +39,11 @@ final class Store: ObservableObject {
 
     // MARK: - Disco
 
+    /// BAUTIZA_DATOS permite usar otra carpeta (pruebas, capturas) sin tocar la configuración real.
     nonisolated static var carpetaDatos: URL {
+        if let otra = ProcessInfo.processInfo.environment["BAUTIZA_DATOS"], !otra.isEmpty {
+            return URL(fileURLWithPath: otra, isDirectory: true)
+        }
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return base.appendingPathComponent("Bautiza", isDirectory: true)
     }

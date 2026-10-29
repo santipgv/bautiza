@@ -376,7 +376,7 @@ struct HistorialView: View {
                         Text(L("antes", "before") + ": \(e.nombreOriginal)").font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Text(e.fecha.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                    Text(e.fecha.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: Loc.locale))).font(.caption).foregroundStyle(.secondary)
                     Button { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: e.deshecho ? e.original : e.nuevo)]) } label: {
                         Image(systemName: "magnifyingglass")
                     }
