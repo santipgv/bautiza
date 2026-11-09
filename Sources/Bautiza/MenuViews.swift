@@ -56,6 +56,7 @@ struct MenuContent: View {
                     if !e.deshecho {
                         Button { processor.deshacer(e) } label: { Image(systemName: "arrow.uturn.backward") }
                             .buttonStyle(.borderless).help(L("Deshacer", "Undo"))
+                            .accessibilityLabel(L("Deshacer «\(e.nombreNuevo)»", "Undo “\(e.nombreNuevo)”"))
                     }
                 }
             }
@@ -67,8 +68,11 @@ struct MenuContent: View {
                         processor.analizar(url, origen: .manual)
                     }
                 }
+                .keyboardShortcut("o", modifiers: .command)
                 Button(L("Ajustes…", "Settings…")) { Ventanas.shared.mostrarAjustes() }
+                    .keyboardShortcut(",", modifiers: .command)
                 Button(L("Salir de Bautiza", "Quit Bautiza")) { NSApp.terminate(nil) }
+                    .keyboardShortcut("q", modifiers: .command)
             }
             .buttonStyle(.borderless)
         }
@@ -132,6 +136,7 @@ struct TarjetaPendiente: View {
                 Spacer()
                 Button { NSWorkspace.shared.open(p.url) } label: { Image(systemName: "eye") }
                     .buttonStyle(.borderless).help(L("Abrir el archivo", "Open the file"))
+                    .accessibilityLabel(L("Abrir el archivo", "Open the file"))
             }
             .font(.caption).foregroundStyle(.secondary)
 

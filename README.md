@@ -26,6 +26,7 @@ documento (3).pdf                   →  20261020-Certificado literal de nacimie
 - **Aprende contigo**: si encuentra una empresa que no está en tu lista, la añades como cliente o proveedor con un botón.
 - **Avisa de duplicados**: si ya tienes ese mismo archivo, te ofrece mandarlo a la Papelera.
 - **Varias carpetas**: Descargas y las que quieras.
+- **Permisos a la vista**: una pestaña con el estado de cada permiso y un botón al sitio de Ajustes del Sistema donde se cambia.
 - **Botón derecho en Finder** → Acciones rápidas → *Renombrar con Bautiza*.
 - **Todo en tu Mac**: no sube nada a ningún sitio. IA opcional de Apple, también local.
 - En **español e inglés**.
@@ -64,6 +65,12 @@ Para pasar las pruebas:
 
 ```bash
 ./test.sh
+```
+
+Para regenerar las capturas del README (`docs/`) con las pantallas reales y datos de demostración:
+
+```bash
+./capturas.sh
 ```
 
 Para probar qué nombre pondría a un archivo sin tocarlo:

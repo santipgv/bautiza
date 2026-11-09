@@ -53,6 +53,15 @@ enum LocalAI {
         #endif
     }
 
+    static var disponible: Bool {
+        #if canImport(FoundationModels)
+        if #available(macOS 26.0, *) {
+            if case .available = SystemLanguageModel.default.availability { return true }
+        }
+        #endif
+        return false
+    }
+
     static func analizar(texto: String, nombreArchivo: String, instrucciones: String) async -> ResultadoIA? {
         #if canImport(FoundationModels)
         if #available(macOS 26.0, *) {

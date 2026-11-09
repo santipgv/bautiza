@@ -1,15 +1,22 @@
 import AppKit
 import ServiceManagement
 import SwiftUI
+import UserNotifications
 
 struct SettingsView: View {
+    /// Ajustes se abre en la última pestaña usada.
+    @AppStorage("pestanaAjustes") private var pestaña = "general"
+
     var body: some View {
-        TabView {
-            AjustesGenerales().tabItem { Label("General", systemImage: "gearshape") }
+        TabView(selection: $pestaña) {
+            AjustesGenerales().tabItem { Label("General", systemImage: "gearshape") }.tag("general")
             EntidadesView().tabItem { Label(L("Clientes y proveedores", "Clients and suppliers"), systemImage: "building.2") }
-            ReglasView().tabItem { Label(L("Reglas", "Rules"), systemImage: "list.bullet.rectangle") }
-            ProbarView().tabItem { Label(L("Probar", "Try it"), systemImage: "wand.and.stars") }
+                .tag("entidades")
+            ReglasView().tabItem { Label(L("Reglas", "Rules"), systemImage: "list.bullet.rectangle") }.tag("reglas")
+            ProbarView().tabItem { Label(L("Probar", "Try it"), systemImage: "wand.and.stars") }.tag("probar")
             HistorialView().tabItem { Label(L("Historial", "History"), systemImage: "clock.arrow.circlepath") }
+                .tag("historial")
+            PermisosView().tabItem { Label(L("Permisos", "Permissions"), systemImage: "lock.shield") }.tag("permisos")
         }
         .padding()
         .frame(minWidth: 680, minHeight: 480)
@@ -42,6 +49,7 @@ struct AjustesGenerales: View {
                         } label: { Image(systemName: "minus.circle") }
                         .buttonStyle(.borderless)
                         .help(L("Dejar de vigilar", "Stop watching"))
+                        .accessibilityLabel(L("Dejar de vigilar \(rutaCorta(carpeta))", "Stop watching \(rutaCorta(carpeta))"))
                     }
                 }
                 Button(L("Añadir carpeta…", "Add folder…")) {
@@ -391,10 +399,131 @@ struct HistorialView: View {
                         Image(systemName: "magnifyingglass")
                     }
                     .buttonStyle(.borderless).help(L("Mostrar en Finder", "Show in Finder"))
+                    .accessibilityLabel(L("Mostrar en Finder", "Show in Finder"))
                     Button { processor.deshacer(e) } label: { Image(systemName: "arrow.uturn.backward") }
                         .buttonStyle(.borderless).help(L("Deshacer", "Undo")).disabled(e.deshecho)
+                        .accessibilityLabel(L("Deshacer «\(e.nombreNuevo)»", "Undo “\(e.nombreNuevo)”"))
                 }
             }
+        }
+    }
+}
+
+// MARK: - Permisos
+
+/// Estado de todo lo que Bautiza necesita del sistema, con un botón al sitio donde se cambia.
+struct PermisosView: View {
+    @EnvironmentObject var store: Store
+    @State private var notificaciones: UNAuthorizationStatus?
+    @State private var refresco = 0
+
+    var body: some View {
+        Form {
+            Section(L("Carpetas vigiladas", "Watched folders")) {
+                ForEach(store.ajustes.carpetas, id: \.self) { carpeta in
+                    let ok = puedeLeer(carpeta)
+                    FilaPermiso(
+                        estado: ok ? .bien : .mal,
+                        titulo: rutaCorta(carpeta),
+                        detalle: ok ? L("Bautiza puede leerla", "Bautiza can read it")
+                                    : L("Sin acceso: permítelo en Archivos y carpetas", "No access: allow it in Files and Folders"),
+                        boton: ok ? nil : L("Abrir privacidad…", "Open Privacy…"),
+                        url: "x-apple.systempreferences:com.apple.preference.security?Privacy_FilesAndFolders")
+                }
+            }
+            Section(L("Sistema", "System")) {
+                FilaPermiso(
+                    estado: notificaciones == .authorized || notificaciones == .provisional ? .bien
+                        : notificaciones == nil || notificaciones == .notDetermined ? .info : .mal,
+                    titulo: L("Notificaciones", "Notifications"),
+                    detalle: textoNotificaciones,
+                    boton: L("Abrir notificaciones…", "Open Notifications…"),
+                    url: "x-apple.systempreferences:com.apple.Notifications-Settings.extension?id=\(Bundle.main.bundleIdentifier ?? "")")
+                FilaPermiso(
+                    estado: LocalAI.disponible ? .bien : .info,
+                    titulo: L("IA de Apple", "Apple's AI"),
+                    detalle: LocalAI.estado,
+                    boton: LocalAI.disponible ? nil : L("Abrir Apple Intelligence…", "Open Apple Intelligence…"),
+                    url: "x-apple.systempreferences:com.apple.Siri-Settings.extension")
+                FilaPermiso(
+                    estado: SMAppService.mainApp.status == .enabled ? .bien : .info,
+                    titulo: L("Abrir al iniciar sesión", "Open at login"),
+                    detalle: SMAppService.mainApp.status == .enabled ? L("Activado", "On")
+                        : L("Desactivado: actívalo en la pestaña General", "Off: turn it on in the General tab"),
+                    boton: nil, url: nil)
+                FilaPermiso(
+                    estado: .info,
+                    titulo: L("Botón derecho en Finder", "Right-click in Finder"),
+                    detalle: L("Si no ves «Renombrar con Bautiza», actívalo en Teclado → Funciones rápidas → Servicios",
+                               "If “Rename with Bautiza” is missing, turn it on in Keyboard → Keyboard Shortcuts → Services"),
+                    boton: L("Abrir Teclado…", "Open Keyboard…"),
+                    url: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension")
+            }
+        }
+        .formStyle(.grouped)
+        .id(refresco)
+        .task { await leerNotificaciones() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            // Al volver de Ajustes del Sistema, el estado puede haber cambiado.
+            refresco += 1
+            Task { await leerNotificaciones() }
+        }
+    }
+
+    private func puedeLeer(_ carpeta: String) -> Bool {
+        (try? FileManager.default.contentsOfDirectory(atPath: (carpeta as NSString).expandingTildeInPath)) != nil
+    }
+
+    private func leerNotificaciones() async {
+        guard Bundle.main.bundleIdentifier != nil else { return }
+        notificaciones = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    }
+
+    private var textoNotificaciones: String {
+        switch notificaciones {
+        case .authorized, .provisional, .ephemeral: return L("Activadas", "On")
+        case .denied: return L("Desactivadas: no verás las propuestas al descargar", "Off: you won't see proposals when downloading")
+        default: return L("Aún sin decidir", "Not decided yet")
+        }
+    }
+}
+
+struct FilaPermiso: View {
+    enum Estado { case bien, mal, info }
+    let estado: Estado
+    let titulo: String
+    let detalle: String
+    let boton: String?
+    let url: String?
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Image(systemName: icono).foregroundStyle(color)
+                .accessibilityLabel(estado == .bien ? L("Correcto", "OK") : estado == .mal ? L("Falta", "Missing") : L("Información", "Info"))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(titulo)
+                Text(detalle).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if let boton, let url, let destino = URL(string: url) {
+                Button(boton) { NSWorkspace.shared.open(destino) }
+            }
+        }
+    }
+
+    private var icono: String {
+        switch estado {
+        case .bien: return "checkmark.circle.fill"
+        case .mal: return "exclamationmark.triangle.fill"
+        case .info: return "info.circle"
+        }
+    }
+
+    private var color: Color {
+        switch estado {
+        case .bien: return .green
+        case .mal: return .orange
+        case .info: return .secondary
         }
     }
 }
@@ -408,7 +537,9 @@ struct BarraLista: View {
     var body: some View {
         HStack {
             Button(action: añadir) { Image(systemName: "plus") }
+                .help(L("Añadir", "Add")).accessibilityLabel(L("Añadir", "Add"))
             Button { quitar?() } label: { Image(systemName: "minus") }.disabled(quitar == nil)
+                .help(L("Quitar el seleccionado", "Remove selected")).accessibilityLabel(L("Quitar el seleccionado", "Remove selected"))
             Spacer()
         }
         .buttonStyle(.borderless)

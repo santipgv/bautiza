@@ -53,10 +53,29 @@ final class ServicioFinder: NSObject {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let servicio = ServicioFinder()
+    private var teclado: Any?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         NSApp.servicesProvider = servicio
         NSUpdateDynamicServices()
+    }
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Bautiza no tiene menú principal, así que los atajos de siempre hay que darlos a mano.
+        teclado = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { evento in
+            guard evento.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command else { return evento }
+            switch evento.charactersIgnoringModifiers {
+            case "w":
+                guard let ventana = NSApp.keyWindow, ventana.styleMask.contains(.closable) else { return evento }
+                ventana.performClose(nil)
+                return nil
+            case ",":
+                MainActor.assumeIsolated { Ventanas.shared.mostrarAjustes() }
+                return nil
+            default:
+                return evento
+            }
+        }
     }
 }
 
